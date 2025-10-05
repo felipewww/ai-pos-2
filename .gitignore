@@ -1,1 +1,6 @@
 .idea
+log-ai/.env
+log-ai/venv
+.venv
+log-ai/src/__pycache__/*
+**/__pycache__/*
