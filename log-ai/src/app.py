@@ -1,6 +1,7 @@
 from models.storage import Storage
 from models.delivery_point import DeliveryPoint
 from build_distance_matrix import build_distance_matrix
+from domain.genetic_algorithm import genetic_algorithm
 
 # todo - necessário considerar que um DeliveryPoint pode receber multiplos pactoes? Para o MVP podemos considerar um pacote fechado, ex: 3 remedios  em um unico pacote para um unico endereço
 
@@ -49,7 +50,12 @@ points = [
     )
 ]
 
-build_distance_matrix(points)
+# todo - limitar em 25 points, se ultrapassar, fazer multiplas reqs e depois mergear os resultados
+matrix = build_distance_matrix(points)
+
+print(matrix)
+
+genetic_algorithm(matrix)
 
 # jd satelite
 # -23.222092, -45.885470- rua pedro tursi, 301
