@@ -1,7 +1,9 @@
 from models.storage import Storage
-from models.delivery_point import DeliveryPoint
 from build_distance_matrix import build_route_matrix
 from domain.genetic_algorithm import genetic_algorithm
+from data.points import points_oriente, points_satelite, points_oriente_priority
+from haversine import haversine_distance_matrix, points_in_area, points_in_radius, pair_points, \
+    assign_points_to_pairs_with_radius
 
 # todo - necessário considerar que um DeliveryPoint pode receber multiplos pactoes? Para o MVP podemos considerar um pacote fechado, ex: 3 remedios  em um unico pacote para um unico endereço
 
@@ -11,107 +13,49 @@ pdt1 = Storage(
     height=5,
 )
 
-points = [
-    # Jd. Satélite
-    DeliveryPoint(
-        title="rua pedro tursi, 301",
-        lat=-23.222092,
-        lng=-45.885470
-    ),
-    DeliveryPoint(
-        title="rua Polar, 100",
-        lat=-23.220456,
-        lng=-45.893967,
-    ),
-    DeliveryPoint(
-        title="rua aldebaram, 2",
-        lat=-23.225819,
-        lng=-45.888817,
-    ),
-    DeliveryPoint(
-        title="rua nazaré, 829",
-        lat=-23.232030,
-        lng=-45.889525,
-    ),
-    DeliveryPoint(
-        title="rua scorpius, 800",
-        lat=-23.225839,
-        lng=-45.894160,
-    ),
-    DeliveryPoint(
-        title="rua joao de paula, 189",
-        lat=-23.230275,
-        lng=-45.895791,
-    ),
-    DeliveryPoint(
-        title="rua tijuca, 442",
-        lat=-23.228829,
-        lng=-45.881087,
-    ),
-    DeliveryPoint(
-        title="R. Divinópolis, 2-196 - Bosque dos Eucaliptos",
-        lat=-23.237525,
-        lng=-45.890879,
-    ),
-    DeliveryPoint(
-        title="R. San Marino, 81-169 - Jardim America",
-        lat=-23.231288,
-        lng=-45.895774,
-    ),
-    DeliveryPoint(
-        title="R. Osvaldo Faria, 365-191 - Jardim Satélite",
-        lat=-23.226893,
-        lng=-45.879383,
-    ),
-    DeliveryPoint(
-        title="R. Pleiades, 111-1 - Jardim Satélite",
-        lat=-23.221031,
-        lng=-45.895959,
-    ),
-    DeliveryPoint(
-        title="R. Maranduba, 2-156 - Jardim Satélite",
-        lat=-23.232992,
-        lng=-45.881497,
-    ),
-    DeliveryPoint(
-        title="R. Ipiau, 162-408 - Jardim Satélite",
-        lat=-23.230846,
-        lng=-45.888061,
-    ),
-    DeliveryPoint(
-        title="R. Vírgem, 377-175 - Jardim Satélite",
-        lat=-23.225325,
-        lng=-45.886689,
-    ),
-    DeliveryPoint(
-        title="R. Crater, 437-231 - Jardim Satélite",
-        lat=-23.227301,
-        lng=-45.891361,
-    ),
-    DeliveryPoint(
-        title="R. Cisne, 179-1 - Jardim Satélite",
-        lat=-23.221202,
-        lng=-45.891324,
-    ),
-    DeliveryPoint(
-        title="R. Newton Viêira Novaes, 2-170 - Bosque dos Eucaliptos",
-        lat=-23.241682,
-        lng=-45.882831,
-    ),
-]
+# def distribute_packages():
+
 
 # todo - limitar em 25 points, se ultrapassar, fazer multiplas reqs e depois mergear os resultados
 # matrix = build_distance_matrix(points)
-matrix = build_route_matrix(points)
+# matrix = build_route_matrix(points_oriente)
+# matrix = haversine_distance_matrix(points_satelite)
+# print(matrix)
 
-print(matrix)
+# todo - Pegar um array somente com as rotas prioritarias, calcular o havesine
 
-genetic_algorithm(
-    matrix,
-    lock_start=True,
-    lock_end=True,
-)
+# genetic_algorithm(
+#     matrix,
+#     lock_start=True,
+#     lock_end=True,
+# )
 
+# todo - primeiro, calcular a menor distancia entre 3 prioridade, se forem só 2, não precisa calcular.
+# todo - pegar as 2 mais curtas, iserir num array com todas as outras (inclusive a  ignorada)
+
+# inside, outside = points_in_radius(points_oriente)
+#
+# print("Dentro do retângulo:")
+# for p in inside:
+#     print(f"- {p.title}")
+#
+# print("\nFora do retângulo:")
+# for p in outside:
+#     print(f"- {p.title}")
+
+pairs = pair_points(points_oriente_priority)
+
+# print(pairs)
+# for pair in pairs:
+#     print('pair....')
+#     for point in pair:
+#         print(f"- {point.title}")
+
+routes, remaining = assign_points_to_pairs_with_radius(pairs, points_oriente)
+
+print(routes)
+print('\nremaining')
+print(remaining)
 # jd satelite
 # -23.222092, -45.885470- rua pedro tursi, 301
 # -23.220456, -45.893967 - Rua Polar, 100

@@ -1,4 +1,6 @@
 import random
+from typing import List
+
 import numpy as np
 
 # todo
@@ -133,21 +135,6 @@ def order_crossover(parent1, parent2, lock_start=True, lock_end=True):
             child[ptr % size] = point
 
     return child
-# --- Crossover (Order Crossover - OX) ---
-# def order_crossover(parent1, parent2):
-#     size = len(parent1)
-#     start, end = sorted(random.sample(range(size), 2))
-#
-#     child = [None] * size
-#     child[start:end] = parent1[start:end]
-#
-#     ptr = end
-#     for i in range(size):
-#         point = parent2[(end + i) % size]
-#         if point not in child:
-#             child[ptr % size] = point
-#             ptr += 1
-#     return child
 
 # --- Mutação (swap) ---
 # def mutate(route, mutation_rate):
@@ -183,7 +170,7 @@ def mutate(
 
 # ---------- Algoritmo Genético ----------
 def genetic_algorithm(
-        dist_matrix,
+        dist_matrix: List[float],
         population_size=700, # população em 70 o reusltado é muito melhor, porque? o mesmo para generations e mutation_rate
         generations=200,
         mutation_rate=0.9,
@@ -199,10 +186,9 @@ def genetic_algorithm(
         lock_end,
     )
 
-    print('all population')
-    for inner_array in population:
-        print(inner_array)
-    # print(population)
+    # print('all population')
+    # for inner_array in population:
+    #     print(inner_array)
 
     # return
     best_route = None
@@ -221,12 +207,12 @@ def genetic_algorithm(
             best_route = gen_best_route
 
         # Nova população com elitismo
-        # new_population = [best_route]
+        new_population = [best_route]
 
         # elitismo com 5%
-        elite_size = max(1, population_size // 20)  # 5%
-        elite_indices = np.argsort(fitnesses)[:elite_size]
-        new_population = [population[i] for i in elite_indices]
+        # elite_size = max(1, population_size // 20)  # 5%
+        # elite_indices = np.argsort(fitnesses)[:elite_size]
+        # new_population = [population[i] for i in elite_indices]
 
         # print('\n')
 
