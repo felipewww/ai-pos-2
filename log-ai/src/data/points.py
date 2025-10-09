@@ -1,5 +1,8 @@
 from models.delivery_point import DeliveryPoint
 
+# todo
+# cada veiculo só pode fazer 2 entregas prioritárias, pois entre elas vai entregar os comuns mais proximos
+# e após elas entregará os remainings
 points_oriente_priority = [
     # oriente
     DeliveryPoint(

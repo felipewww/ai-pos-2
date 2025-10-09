@@ -3,6 +3,8 @@ from math import radians, sin, cos, sqrt, atan2
 
 from models.delivery_point import DeliveryPoint
 
+# Distância em linha reta entre dois pontos
+# utilizado por haversine_distance_matrix
 def haversine(p1: DeliveryPoint, p2: DeliveryPoint) -> float:
     # Raio médio da Terra em km
     R = 6371.0
@@ -20,6 +22,8 @@ def haversine(p1: DeliveryPoint, p2: DeliveryPoint) -> float:
 
     return distance # retorna em km
 
+# Distância Matrix em linha reta entre todos os pontos
+# Existe uma implementação com google maps distance matrix, mas é muito caro para testes (build_distance_matrix.py)
 def haversine_distance_matrix(points: List[DeliveryPoint]) -> List[float]:
     dist_matrix = [
         [haversine(p1, p2) for p2 in points]
@@ -28,6 +32,8 @@ def haversine_distance_matrix(points: List[DeliveryPoint]) -> List[float]:
 
     return dist_matrix
 
+# Cria um retângulo entre 2 lat/long e busca pontos dentro deste retângulo
+# deprecated, mas seria uma opção de busca de pontos menor que radius
 def points_in_area(points: List[DeliveryPoint]) -> tuple[List[DeliveryPoint], List[DeliveryPoint]]:
     if len(points) < 2:
         return [], []
@@ -72,8 +78,7 @@ def points_in_radius(points: List[DeliveryPoint], radius_km=0.3) -> tuple[List[D
 
 # Formar pares de rotas mais próximas para pontos prioritários
 # que definirão o início e fim de uma rota inicial (2 prioridade mergeadas com comuns)
-# -> List[List[DeliveryPoint, DeliveryPoint]]
-def pair_points(points):
+def pair_points(points) -> List[Tuple[DeliveryPoint, DeliveryPoint]]:
     # todo
     # Aqui seria uma melhoria do sistema, caso as prioridades sejam número impar, poderíamos
     # extrair uma entrega comum mais próxima do remaining (usando haversine) e considerá-la como
@@ -120,11 +125,13 @@ def assign_points_to_pairs_with_radius(
     """
 
     routes = []
-    used = set()
+    # used = set()
+    used = []
 
     for (p1, p2) in pairs:
         # rota inicial = a dupla
-        route = [p1, p2]
+        # route = [p1, p2]
+        route = []
 
         # candidatos que ainda não foram usados
         unused_candidates = [c for idx, c in enumerate(candidates) if idx not in used]
@@ -137,7 +144,10 @@ def assign_points_to_pairs_with_radius(
         # adiciona os pontos dentro do raio
         for c in inside:
             route.append(c)
-            used.add(candidates.index(c))
+            # used.add(candidates.index(c))
+            used.append(c)
+
+        route = [p1] + route + [p2]
 
         routes.append(route)
 

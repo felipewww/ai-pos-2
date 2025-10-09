@@ -1,6 +1,4 @@
-from .delivery_point import DeliveryPoint
-
-class Storage:
+class Package:
     def __init__(
             self,
             length: float,
