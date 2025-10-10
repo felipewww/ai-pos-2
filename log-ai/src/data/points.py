@@ -170,8 +170,3 @@ points_oriente = [
         lng=-45.882831,
     ),
 ]
-
-points_satelite = [
-
-
-]

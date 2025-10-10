@@ -3,10 +3,9 @@ from typing import List, Tuple
 
 from models.delivery_point import DeliveryPoint
 from models.package import Package
-from build_distance_matrix import build_route_matrix
 from domain.genetic_algorithm import genetic_algorithm
-from data.points import points_oriente, points_satelite, points_oriente_priority
-from haversine import haversine_distance_matrix, points_in_area, points_in_radius, pair_points, \
+from data.points import points_oriente, points_oriente_priority
+from haversine import haversine_distance_matrix, pair_points, \
     assign_points_to_pairs_with_radius
 from models.route import Route
 
@@ -19,21 +18,18 @@ pdt1 = Package(
 )
 
 def main(
-        # self,
         priorities: List[DeliveryPoint],
         commons: List[DeliveryPoint],
 ):
     pairs = pair_points(priorities)
-
     pairs_aggregated, remaining = assign_points_to_pairs_with_radius(pairs, commons)
 
     # o último ponto de entrega de cada rota será usado para calcular a distribuição de rotas restantes (remaining)
     last_points: List[DeliveryPoint] = []
 
-    print('\n')
     for pair_ag in pairs_aggregated:
         matrix = haversine_distance_matrix(pair_ag)
-        # aqui nao precisamos travar o start e endpoint, eles serão os priorities e teremos poucas entregas entre eles
+        # aqui não precisamos travar o start e endpoint, eles serão os priorities e teremos poucas entregas entre eles
         best_route, best_distance = genetic_algorithm(
             matrix,
             population_size=len(pair_ag) * len(pair_ag), # poderiamos usar força bruta, pois aqui temos poucas rotas entre priority 1 e 2
@@ -43,7 +39,6 @@ def main(
         )
 
         last_points.append(pair_ag[best_route[-1]])
-        # last_point = pair_ag[best_route[-1]]
 
     pairs_final, remaining = distribute_remaining_with_ga(
         pairs_aggregated,
@@ -55,9 +50,6 @@ def main(
 
     for pair_final in pairs_final:
         route = Route()
-        # print('\npair final matrix....')
-        # print(pair_final)
-        # print(len(pair_final))
         for point in pair_final:
             route.add_point(point)
             print(f"{point.title} - {point.is_priority}")
@@ -65,9 +57,7 @@ def main(
         routes.append(route)
 
     json_output = json.dumps([r.to_dict() for r in routes], indent=2)
-    # for r in routes:
-    #     print('r.to_dict():::')
-    #     print(r.to_dict())
+
     print(json_output)
 
 def distribute_remaining_with_ga(
