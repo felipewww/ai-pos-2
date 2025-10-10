@@ -1,3 +1,4 @@
+import json
 from typing import List, Tuple
 
 from models.delivery_point import DeliveryPoint
@@ -35,7 +36,7 @@ def main(
         # aqui nao precisamos travar o start e endpoint, eles serão os priorities e teremos poucas entregas entre eles
         best_route, best_distance = genetic_algorithm(
             matrix,
-            population_size=len(pair_ag) * len(pair_ag), # poderiamos usar força bruta, pois aqui temos poucas rotas entre priority A e Z
+            population_size=len(pair_ag) * len(pair_ag), # poderiamos usar força bruta, pois aqui temos poucas rotas entre priority 1 e 2
             generations=100,
             lock_start=False,
             lock_end=False,
@@ -44,17 +45,30 @@ def main(
         last_points.append(pair_ag[best_route[-1]])
         # last_point = pair_ag[best_route[-1]]
 
-    pairs_final = distribute_remaining_with_ga(
+    pairs_final, remaining = distribute_remaining_with_ga(
         pairs_aggregated,
         remaining,
         last_points,
     )
 
+    routes: List[Route] = []
+
     for pair_final in pairs_final:
-        print('\npair final matrix....')
-        print(pair_final)
+        route = Route()
+        # print('\npair final matrix....')
+        # print(pair_final)
+        # print(len(pair_final))
         for point in pair_final:
+            route.add_point(point)
             print(f"{point.title} - {point.is_priority}")
+
+        routes.append(route)
+
+    json_output = json.dumps([r.to_dict() for r in routes], indent=2)
+    # for r in routes:
+    #     print('r.to_dict():::')
+    #     print(r.to_dict())
+    print(json_output)
 
 def distribute_remaining_with_ga(
         pairs_aggregated: List[List[DeliveryPoint]],
@@ -74,6 +88,9 @@ def distribute_remaining_with_ga(
     new_routes = []
 
     for i, pair in enumerate(pairs_aggregated):
+        print('\n')
+        print('calculating remainings....')
+        print(remaining)
         if not remaining:
             new_routes.append(pair)
             continue
@@ -107,10 +124,10 @@ def distribute_remaining_with_ga(
         # remove os selecionados do remaining
         remaining = [p for p in remaining if p not in selected]
 
-    if len(remaining):
-        raise Exception('Remaining is not cleared')
+    # if len(remaining):
+    #     raise Exception('Remaining is not cleared')
 
-    return new_routes
+    return new_routes, remaining
 
 
 main(
