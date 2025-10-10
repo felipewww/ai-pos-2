@@ -1,6 +1,7 @@
 import json
 from typing import List, Tuple
 
+from domain.distribute_points_kmeans import distribute_points_with_kmeans, clusterize_kmeans, auto_kmeans
 from models.delivery_point import DeliveryPoint
 from models.package import Package
 from domain.genetic_algorithm import genetic_algorithm
@@ -24,7 +25,8 @@ def main(
     pairs = pair_points(priorities)
     pairs_aggregated, remaining = assign_points_to_pairs_with_radius(pairs, commons)
 
-    # o último ponto de entrega de cada rota será usado para calcular a distribuição de rotas restantes (remaining)
+    # o último ponto de entrega de cada rota prioritária será usado
+    # para calcular a distribuição de rotas restantes (remaining)
     last_points: List[DeliveryPoint] = []
 
     for pair_ag in pairs_aggregated:
@@ -120,21 +122,72 @@ def distribute_remaining_with_ga(
     return new_routes, remaining
 
 
-main(
-    priorities=points_oriente_priority,
-    commons=points_oriente
-)
-    # for route in pair:
-    #     # print(len(route))
-    #     print(f"- {route.title}")
+# main(
+#     priorities=points_oriente_priority,
+#     commons=points_oriente
+# )
 
-# jd satelite
-# -23.222092, -45.885470- rua pedro tursi, 301
-# -23.220456, -45.893967 - Rua Polar, 100
-# -23.225819, -45.888817 - Rua aldebaram, 2
-# -23.232030, -45.889525 - rua nazaré, 829
-# -23.225839, -45.894160 - rua scorpius, 800
-# -23.230275, -45.895791 - rua joao de paula, 189
-# -23.228829, -45.881087 - rua tijuca, 442
+# clusters = clusterize_kmeans(
+#     points_oriente_priority + points_oriente
+# )
 
-# print(pdt1.width)
+# clusters = distribute_points_with_kmeans(
+#     points_oriente_priority + points_oriente
+# )
+
+def no_priority():
+    clusters, best_k = auto_kmeans(
+        points=points_oriente_priority + points_oriente,
+        min_clusters=4,
+        # points_oriente
+    )
+
+    routes: List[Route] = []
+    #
+    # for cluster in enumerate(clusters.items()):
+    #     route = Route()
+    #     for point in pair_final:
+    #         route.add_point(point)
+    #         print(f"{point.title} - {point.is_priority}")
+    #
+    #     routes.append(route)
+    #
+    # json_output = json.dumps([r.to_dict() for r in routes], indent=2)
+    #
+    # print(json_output)
+
+    for i, cluster in enumerate(clusters.items()):
+        print('\n')
+        points: List[DeliveryPoint] = cluster[1]
+        print(f'cluster {i} len {len(points)}')
+
+        matrix = haversine_distance_matrix(points)
+
+        population_size= (len(points) * len(points))
+
+        if population_size > 1000:
+            population_size = 1000
+
+        best_route, best_distance = genetic_algorithm(
+            matrix,
+            population_size,
+            generations=100,
+            lock_start=False,
+            lock_end=False,
+        )
+
+        print(best_route)
+
+        route = Route()
+        for best_route_idx in best_route:
+            print(f'{points[best_route_idx].title}')
+            route.add_point(points[best_route_idx])
+
+        routes.append(route)
+
+        # print(f'best route: {best_route} - best distance: {best_distance}')
+    json_output = json.dumps([r.to_dict() for r in routes], indent=2)
+
+    print(json_output)
+
+no_priority()

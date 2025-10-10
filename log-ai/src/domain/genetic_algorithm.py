@@ -17,54 +17,6 @@ def calculate_fitness(route, dist_matrix):
     total_dist += dist_matrix[route[-1]][route[0]]  # volta ao início
     return total_dist
 
-# --- Inicialização da população ---
-# def generate_population(size, num_points, start_point=0):
-#     population = []
-#     other_points = [i for i in range(num_points) if i != start_point]
-#
-#     for _ in range(size):
-#         route = [start_point] + random.sample(other_points, len(other_points))
-#         population.append(route)
-#     return population
-
-# def generate_population(
-#         size,
-#         num_points,
-#         start_point=True,
-#         end_point=True,
-# ):
-#     population = []
-#     all_points = list(range(num_points))
-#
-#     # etapa 1: separa start fixo
-#     fixed_start = []
-#     middle = all_points[:]
-#     if start_point:
-#         fixed_start = all_points[0]
-#         middle = all_points[1:]
-#
-#     # etapa 2: separa end fixo
-#     fixed_end = []
-#     if end_point:
-#         fixed_end = middle[-1]
-#         middle = middle[:-1]
-#
-#     print("middle", middle)
-#
-#     # etapa 3: monta rotas
-#     for _ in range(size):
-#         route = random.sample(middle, len(middle))
-#
-#         if start_point:
-#             route.insert(fixed_start, 0)
-#
-#         if end_point:
-#             route.append(fixed_end)
-#         # route = fixed_start + random.sample(middle, len(middle)) + fixed_end
-#         population.append(route)
-#
-#     return population
-
 def generate_population(
         size,
         num_points,
@@ -74,14 +26,12 @@ def generate_population(
     population = []
     all_points = list(range(num_points))
 
-    # fixa start
     fixed_start = None
     middle = all_points[:]
     if lock_start:
         fixed_start = all_points[0]
         middle = all_points[1:]
 
-    # fixa end
     fixed_end = None
     if lock_end:
         fixed_end = middle[-1]
@@ -99,7 +49,6 @@ def generate_population(
 
     return population
 
-# --- Seleção por torneio ---
 def tournament_selection(population, fitnesses, k=7):
     selected = random.sample(list(zip(population, fitnesses)), k)
     selected.sort(key=lambda x: x[1])
@@ -161,10 +110,9 @@ def mutate(
     route2 = route[:]
     if random.random() < mutation_rate:
         start_idx = 1 if lock_start else 0
-        # end_idx = len(route) - 2 if lock_end else len(route) - 1
-        end_idx = len(route) - 1 if lock_end else len(route) - 2
+        end_idx = len(route) - 2 if lock_end else len(route) - 1
+        # end_idx = len(route) - 1 if lock_end else len(route) - 2
         i, j = sorted(random.sample(range(start_idx, end_idx+1), 2))
-        # route[i:j] = reversed(route[i:j])
         route2[i:j] = reversed(route2[i:j])
     return route2
 
@@ -230,9 +178,8 @@ def genetic_algorithm(
 
         population = new_population
 
-        if gen % 5 == 0:
-            print(best_route)
-            print(f"Geração {gen}: melhor distância = {best_distance}")
-
+        # if gen % 5 == 0:
+        #     print(best_route)
+        #     print(f"Geração {gen}: melhor distância = {best_distance}")
 
     return best_route, best_distance

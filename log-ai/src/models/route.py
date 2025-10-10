@@ -15,7 +15,8 @@ class Route:
             "deliveryPoints": [
                 {
                     "lat":  p.lat,
-                    "lng": p.lng
+                    "lng": p.lng,
+                    "is_priority": p.is_priority,
                  } for p in self.track
             ]
         }

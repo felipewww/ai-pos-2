@@ -1,5 +1,9 @@
 {
   "files": [],
+  "compilerOptions": {
+    "strictNullChecks": false,
+    "strict": false
+  },
   "references": [
     {
       "path": "./tsconfig.node.json"
