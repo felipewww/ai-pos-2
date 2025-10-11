@@ -2,13 +2,13 @@ import json
 import sys
 from typing import List, Tuple
 
-from domain.distribute_points_kmeans import distribute_points_with_kmeans, clusterize_kmeans, auto_kmeans
+from domain.distribute_points_kmeans import auto_kmeans
 from models.delivery_point import DeliveryPoint
 from models.package import Package
 from domain.genetic_algorithm import genetic_algorithm
 from data.points import points_oriente, points_oriente_priority
 from haversine import haversine_distance_matrix, pair_points, \
-    assign_points_to_pairs_with_radius
+    assign_points_to_pairs_with_radius, haversine
 from models.route import Route
 
 # todo - necessário considerar que um DeliveryPoint pode receber multiplos pactoes? Para o MVP podemos considerar um pacote fechado, ex: 3 remedios  em um unico pacote para um unico endereço
@@ -136,6 +136,20 @@ def distribute_remaining_with_ga(
 #     points_oriente_priority + points_oriente
 # )
 
+def calc_total_distance(points: List):
+    """
+    Calcula a distância total percorrida em uma rota (ordem dos pontos).
+    Retorna a distância total em quilômetros.
+    """
+    if len(points) < 2:
+        return 0.0
+
+    total = 0.0
+    for i in range(len(points) - 1):
+        total += haversine(points[i], points[i + 1])
+
+    return total
+
 def no_priority(
     points: List[DeliveryPoint],
     min_clusters=2,
@@ -174,13 +188,25 @@ def no_priority(
         if population_size < 100:
             population_size = 100
 
-        best_route, best_distance = genetic_algorithm(
-            matrix,
-            population_size,
-            generations=100,
-            lock_start=False,
-            lock_end=False,
-        )
+        """
+        Durante a execução do algoritmo genético, alguns clusters pequenos (com menos de dois genes úteis para o crossover) 
+        causavam exceções no processo de recombinação.
+        Para evitar isso, adicionou-se uma verificação de tamanho mínimo no operador de crossover, garantindo 
+        que apenas indivíduos com número suficiente de genes passem por recombinação, enquanto os demais são 
+        preservados por cópia direta.
+        """
+        if len(points) < 3:
+            # não dá pra fazer crossover — usa caminho direto
+            best_route = list(range(len(points)))
+            best_distance = calc_total_distance(points)
+        else:
+            best_route, best_distance = genetic_algorithm(
+                matrix,
+                population_size,
+                generations=100,
+                lock_start=False,
+                lock_end=False,
+            )
 
         # print(best_route)
 
@@ -211,14 +237,37 @@ def main():
             lng=item['lng'],
             is_priority=item.get('isPriority')
         )
-        for item in data
+        for item in data["deliveryPoints"]
     ]
+
+    dps = []
+    dpsPriority = []
+    for item in data["deliveryPoints"]:
+        dp = DeliveryPoint(
+            title=item['address'],
+            lat=item['lat'],
+            lng=item['lng'],
+            is_priority=item.get('isPriority')
+        )
+
+        if item['isPriority']:
+            dpsPriority.append(dp)
+        else:
+            dps.append(dp)
+
+    if len(dpsPriority) % 2 != 0:
+        dps += dpsPriority
+
+    vehicles = data["vehicles"] if data["vehicles"] else 2
 
     # print(delivery_points)
 
     # print('\nPYDATA')
     # print(data)
-    processed = no_priority(delivery_points)
+    processed = no_priority(
+        delivery_points,
+        min_clusters=vehicles,
+    )
 
     print(processed)
     # Faz alguma lógica

@@ -7,11 +7,22 @@ import { PyResponse } from "./domain/types/py-response";
 export class AppService {
   async calcRoutes(deliveryPoints: DeliveryPointInput[]): Promise<PyResponse> {
 
+    let vehicles = 4;
+
+    if (vehicles <= deliveryPoints.length) {
+      vehicles = Math.floor(deliveryPoints.length / 2);
+    }
+
+    const req = {
+      deliveryPoints,
+      vehicles,
+    };
+
     return new Promise(async (resolve, reject) => {
       const pyFolder = `${__dirname}/../../log-ai`
       const python = spawn(`${pyFolder}/venv/bin/python`, [
         `${pyFolder}/src/app.py`,
-        JSON.stringify(deliveryPoints)
+        JSON.stringify(req)
       ]);
 
       let data = "";

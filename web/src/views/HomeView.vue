@@ -17,6 +17,7 @@
                 <div class="map-container">
                     <div ref="mapEl" class="map"></div>
                     <div class="btn btn-success" @click="calcRoutes">Calcular rotas</div>
+                    <div class="btn btn-danger" @click="clearAll">Limpar mapa</div>
                     <div v-if="clickedLocation" class="clickedLocation">
                         <p><strong>Endereço:</strong> {{ clickedLocation.address }}</p>
                         <div class="btn btn-success" @click="addMarker">Adicionar Ponto de entrega</div>
@@ -56,6 +57,8 @@ const currentMarkerNumber = computed(() => {
 })
 
 const deliveryPoints = ref<DeliveryPoint[]>([]);
+
+const routeMarkers = ref<google.maps.Marker[]>([])
 
 onMounted(async () => {
     apiService.getGmapsKey()
@@ -97,12 +100,11 @@ async function mountMap() {
             },
         ],
     });
-    //
-    // let marker: google.maps.Marker | null = null;
-    // let marker: AdvancedMarkerElement = null;
+
     const geocoder = new Geocoder();
 
     map.value.addListener("click", async (e: google.maps.MapMouseEvent) => {
+
         const ll = e.latLng; if (!ll) return;
         const lat = ll.lat(), lng = ll.lng();
 
@@ -167,119 +169,7 @@ function addMarker() {
     )
 
     clickedLocation.value = null;
-
-    currentMarker.value = null;
-
-    // const dpsPriority = [
-    //     {
-    //         "lat": -23.245886,
-    //         "lng": -45.899743,
-    //         "is_priority": false
-    //     },
-    //     {
-    //         "lat": -23.245046,
-    //         "lng": -45.89709,
-    //         "is_priority": false
-    //     },
-    //     {
-    //         "lat": -23.246538,
-    //         "lng": -45.89606,
-    //         "is_priority": false
-    //     },
-    //     {
-    //         "lat": -23.248786,
-    //         "lng": -45.893156,
-    //         "is_priority": false
-    //     },
-    //     {
-    //         "lat": -23.245235,
-    //         "lng": -45.89247,
-    //         "is_priority": true
-    //     },
-    //     {
-    //         "lat": -23.242545,
-    //         "lng": -45.893361,
-    //         "is_priority": false
-    //     },
-    //     {
-    //         "lat": -23.243112,
-    //         "lng": -45.8959,
-    //         "is_priority": false
-    //     },
-    //     {
-    //         "lat": -23.24057,
-    //         "lng": -45.899422,
-    //         "is_priority": true
-    //     },
-    //     {
-    //         "lat": -23.24057,
-    //         "lng": -45.900794,
-    //         "is_priority": true
-    //     },
-    //     {
-    //         "lat": -23.242839,
-    //         "lng": -45.902075,
-    //         "is_priority": false
-    //     },
-    //     {
-    //         "lat": -23.248008,
-    //         "lng": -45.904042,
-    //         "is_priority": false
-    //     },
-    //     {
-    //         "lat": -23.24679,
-    //         "lng": -45.900543,
-    //         "is_priority": true
-    //     }
-    // ]
-
-    // const dpsNoPrio = [
-    //     {
-    //         "lat": -23.225839,
-    //         "lng": -45.89416,
-    //         "is_priority": false
-    //     },
-    //     {
-    //         "lat": -23.227301,
-    //         "lng": -45.891361,
-    //         "is_priority": false
-    //     },
-    //     {
-    //         "lat": -23.225819,
-    //         "lng": -45.888817,
-    //         "is_priority": false
-    //     },
-    //     {
-    //         "lat": -23.225325,
-    //         "lng": -45.886689,
-    //         "is_priority": false
-    //     },
-    //     {
-    //         "lat": -23.222092,
-    //         "lng": -45.88547,
-    //         "is_priority": true
-    //     },
-    //     {
-    //         "lat": -23.221202,
-    //         "lng": -45.891324,
-    //         "is_priority": false
-    //     },
-    //     {
-    //         "lat": -23.220456,
-    //         "lng": -45.893967,
-    //         "is_priority": false
-    //     },
-    //     {
-    //         "lat": -23.221031,
-    //         "lng": -45.895959,
-    //         "is_priority": false
-    //     }
-    // ]
-
-    // traceMultipleRoutes([
-    //     dpsPriority,
-    //     dpsNoPrio
-    // ])
+    currentMarker.value.setMap(null);
 }
 
 type DP = {
@@ -288,18 +178,63 @@ type DP = {
 }
 
 // Lista global para armazenar renderizadores ativos (para poder limpar depois)
-const routeRenderers: google.maps.DirectionsRenderer[] = []
+let routeRenderers = ref<google.maps.DirectionsRenderer[]>([])
+
+function clearRoutes() {
+    usedColors.clear();
+    routeRenderers.value.forEach(r => r.setMap(null))
+    // routeRenderers.value.length = 0
+    routeRenderers.value = []
+
+    console.log('cleaning routes...')
+    console.log(routeMarkers.value.length)
+    routeMarkers.value.map(m => {
+        m.setMap(null)
+        m.setOpacity(0)
+        m.setVisible(false)
+    })
+    routeMarkers.value = []
+}
+
+function clearPoints() {
+    deliveryPoints.value.map(dp => {
+        dp.removeMarker()
+    })
+}
+
+function clearAll() {
+    clearRoutes()
+    clearPoints()
+}
+
+const usedColors = new Set<string>()
 
 function traceMultipleRoutes(allClusters: DP[][]) {
     // Remove rotas antigas
-    routeRenderers.forEach(r => r.setMap(null))
-    routeRenderers.length = 0
+    clearRoutes()
 
     // Paleta de cores (pode aumentar conforme número de clusters)
-    const colors = ["#FF0000", "#008000", "#0000FF", "#FFA500", "#800080", "#00CED1"]
+    const colors = [
+        "#FF0000",
+        "#008000",
+        "#0000FF",
+        "#FFA500",
+        "#800080",
+        "#00CED1",
+        "#d10088",
+        "#ffe145",
+        "#370000",
+        "#000000",
+        "#ffa86e",
+    ]
+
+    const availableColors = colors.filter(c => !usedColors.has(c))
 
     allClusters.forEach((dps, idx) => {
-        traceRouteCluster(dps, colors[idx % colors.length])
+        const randomIndex = Math.floor(Math.random() * availableColors.length)
+        const color = colors[randomIndex]
+        usedColors.add(color)
+        traceRouteCluster(dps, color)
     })
 }
 
@@ -332,7 +267,7 @@ function traceRouteCluster(dps: DP[], color: string) {
         (result, status) => {
             if (status === "OK" && result) {
                 directionsRenderer.setDirections(result)
-                routeRenderers.push(directionsRenderer)
+                routeRenderers.value.push(directionsRenderer)
 
                 // Marcadores personalizados
                 addCustomMarkers(dps, color)
@@ -345,7 +280,7 @@ function traceRouteCluster(dps: DP[], color: string) {
 
 function addCustomMarkers(dps: DP[], color: string) {
     dps.forEach((p, i) => {
-        new google.maps.Marker({
+        const routeMarker = new google.maps.Marker({
             position: { lat: p.lat, lng: p.lng },
             map: map.value,
             // label: `${i + 1}`, // apenas texto, sem objeto
@@ -365,6 +300,8 @@ function addCustomMarkers(dps: DP[], color: string) {
             },
             // title: p.title,
         })
+
+        routeMarkers.value.push(routeMarker)
     })
 }
 
@@ -393,6 +330,10 @@ function calcRoutes() {
                         lng: p.lng,
                     }
                 })
+            })
+
+            deliveryPoints.value.map((p, i) => {
+                p.removeMarker()
             })
 
             traceMultipleRoutes(toRoutes);

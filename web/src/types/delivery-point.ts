@@ -17,4 +17,15 @@ export class DeliveryPoint {
     setPriority(isPriority: boolean) {
         this._isPriority = isPriority;
     }
+
+    removeMarker(): void {
+        this.marker.setVisible(false);
+        this.marker.setOpacity(0)
+        this.marker.setMap(null);
+    }
+
+    showMarker(): void {
+        this.marker.setVisible(true);
+        this.marker.setOpacity(1)
+    }
 }
