@@ -1,4 +1,5 @@
 import json
+import sys
 from typing import List, Tuple
 
 from domain.distribute_points_kmeans import distribute_points_with_kmeans, clusterize_kmeans, auto_kmeans
@@ -18,7 +19,7 @@ pdt1 = Package(
     height=5,
 )
 
-def main(
+def priotities(
         priorities: List[DeliveryPoint],
         commons: List[DeliveryPoint],
 ):
@@ -135,11 +136,13 @@ def distribute_remaining_with_ga(
 #     points_oriente_priority + points_oriente
 # )
 
-def no_priority():
+def no_priority(
+    points: List[DeliveryPoint],
+    min_clusters=2,
+):
     clusters, best_k = auto_kmeans(
-        points=points_oriente_priority + points_oriente,
-        min_clusters=4,
-        # points_oriente
+        points,
+        min_clusters,
     )
 
     routes: List[Route] = []
@@ -157,9 +160,9 @@ def no_priority():
     # print(json_output)
 
     for i, cluster in enumerate(clusters.items()):
-        print('\n')
+        # print('\n')
         points: List[DeliveryPoint] = cluster[1]
-        print(f'cluster {i} len {len(points)}')
+        # print(f'cluster {i} len {len(points)}')
 
         matrix = haversine_distance_matrix(points)
 
@@ -167,6 +170,9 @@ def no_priority():
 
         if population_size > 1000:
             population_size = 1000
+
+        if population_size < 100:
+            population_size = 100
 
         best_route, best_distance = genetic_algorithm(
             matrix,
@@ -176,11 +182,11 @@ def no_priority():
             lock_end=False,
         )
 
-        print(best_route)
+        # print(best_route)
 
         route = Route()
         for best_route_idx in best_route:
-            print(f'{points[best_route_idx].title}')
+            # print(f'{points[best_route_idx].title}')
             route.add_point(points[best_route_idx])
 
         routes.append(route)
@@ -188,6 +194,43 @@ def no_priority():
         # print(f'best route: {best_route} - best distance: {best_distance}')
     json_output = json.dumps([r.to_dict() for r in routes], indent=2)
 
-    print(json_output)
+    # print(json_output)
+    return json_output
 
-no_priority()
+# no_priority()
+
+def main():
+    # Lê o argumento JSON passado pelo Node
+    input_json = sys.argv[1]
+    data = json.loads(input_json)
+
+    delivery_points = [
+        DeliveryPoint(
+            title=item['address'],
+            lat=item['lat'],
+            lng=item['lng'],
+            is_priority=item.get('isPriority')
+        )
+        for item in data
+    ]
+
+    # print(delivery_points)
+
+    # print('\nPYDATA')
+    # print(data)
+    processed = no_priority(delivery_points)
+
+    print(processed)
+    # Faz alguma lógica
+    # result = {
+    #     "data": data
+        # "received_name": data["name"],
+        # "sum": sum(data["numbers"]),
+        # "count": len(data["numbers"])
+    # }
+
+    # Retorna o resultado como JSON (stdout)
+    # print(json.dumps(result))
+
+if __name__ == "__main__":
+    main()
