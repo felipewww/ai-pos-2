@@ -1,5 +1,4 @@
-import type {DeliveryPoint} from "@/types/delivery-point.ts";
-import type {DeliveryPointInput} from "@/types/dtos/delivery-point.input.ts";
+import type {CalculateInput} from "@/types/dtos/calculate/calculate.input.ts";
 
 export class ApiService {
     private apiUrl = import.meta.env.VITE_API_URL
@@ -10,10 +9,10 @@ export class ApiService {
         })
     }
 
-    async calculateRoutes(deliveryPoints: DeliveryPointInput[]) {
+    async calculateRoutes(body: CalculateInput) {
         return fetch(`${this.apiUrl}/calculate`, {
             method: 'POST',
-            body: JSON.stringify({deliveryPoints}),
+            body: JSON.stringify(body),
             headers: {
                 // 'Accept': 'application/json',
                 'content-type': 'application/json'

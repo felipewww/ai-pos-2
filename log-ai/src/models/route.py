@@ -14,6 +14,7 @@ class Route:
         return {
             "deliveryPoints": [
                 {
+                    "id": p.id,
                     "lat":  p.lat,
                     "lng": p.lng,
                     "is_priority": p.is_priority,

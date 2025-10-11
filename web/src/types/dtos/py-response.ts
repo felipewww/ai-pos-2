@@ -1,7 +1,8 @@
 export type PyResponse = Array<{
-  deliveryPoints: {
-    lat: number,
-    lng: number,
-    is_priority: boolean,
-  }[]
+    deliveryPoints: {
+        id: string;
+        lat: number,
+        lng: number,
+        is_priority: boolean,
+    }[]
 }>

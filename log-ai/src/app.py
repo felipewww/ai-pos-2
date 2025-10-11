@@ -1,5 +1,6 @@
 import json
 import sys
+from math import isnan
 from typing import List, Tuple
 
 from domain.distribute_points_kmeans import auto_kmeans
@@ -19,12 +20,24 @@ pdt1 = Package(
     height=5,
 )
 
-def priotities(
+def calc_with_priorities(
         priorities: List[DeliveryPoint],
         commons: List[DeliveryPoint],
 ):
     pairs = pair_points(priorities)
     pairs_aggregated, remaining = assign_points_to_pairs_with_radius(pairs, commons)
+
+    # print('\n')
+    # print(f"pairs_aggregated: {len(pairs_aggregated)}")
+    # for pair in pairs_aggregated:
+    #     print(f"lenpair: {len(pair)}")
+    #     for p in pair:
+    #         print(f"p: {p.title}")
+    #
+    # print('\n')
+    # print(f"remaining: {len(remaining)}")
+    # for p in remaining:
+    #     print(f"p: {p.title}")
 
     # o último ponto de entrega de cada rota prioritária será usado
     # para calcular a distribuição de rotas restantes (remaining)
@@ -55,13 +68,13 @@ def priotities(
         route = Route()
         for point in pair_final:
             route.add_point(point)
-            print(f"{point.title} - {point.is_priority}")
+            # print(f"{point.title} - {point.is_priority}")
 
         routes.append(route)
 
     json_output = json.dumps([r.to_dict() for r in routes], indent=2)
 
-    print(json_output)
+    return json_output
 
 def distribute_remaining_with_ga(
         pairs_aggregated: List[List[DeliveryPoint]],
@@ -81,9 +94,6 @@ def distribute_remaining_with_ga(
     new_routes = []
 
     for i, pair in enumerate(pairs_aggregated):
-        print('\n')
-        print('calculating remainings....')
-        print(remaining)
         if not remaining:
             new_routes.append(pair)
             continue
@@ -122,20 +132,6 @@ def distribute_remaining_with_ga(
 
     return new_routes, remaining
 
-
-# main(
-#     priorities=points_oriente_priority,
-#     commons=points_oriente
-# )
-
-# clusters = clusterize_kmeans(
-#     points_oriente_priority + points_oriente
-# )
-
-# clusters = distribute_points_with_kmeans(
-#     points_oriente_priority + points_oriente
-# )
-
 def calc_total_distance(points: List):
     """
     Calcula a distância total percorrida em uma rota (ordem dos pontos).
@@ -152,31 +148,25 @@ def calc_total_distance(points: List):
 
 def no_priority(
     points: List[DeliveryPoint],
-    min_clusters=2,
+    min_clusters = 2,
+    max_clusters = 10,
 ):
+    if min_clusters is None:
+        min_clusters = 2
+    if max_clusters is None:
+        max_clusters = 10
+
+
     clusters, best_k = auto_kmeans(
         points,
         min_clusters,
+        max_clusters,
     )
 
     routes: List[Route] = []
-    #
-    # for cluster in enumerate(clusters.items()):
-    #     route = Route()
-    #     for point in pair_final:
-    #         route.add_point(point)
-    #         print(f"{point.title} - {point.is_priority}")
-    #
-    #     routes.append(route)
-    #
-    # json_output = json.dumps([r.to_dict() for r in routes], indent=2)
-    #
-    # print(json_output)
 
     for i, cluster in enumerate(clusters.items()):
-        # print('\n')
         points: List[DeliveryPoint] = cluster[1]
-        # print(f'cluster {i} len {len(points)}')
 
         matrix = haversine_distance_matrix(points)
 
@@ -208,30 +198,25 @@ def no_priority(
                 lock_end=False,
             )
 
-        # print(best_route)
-
         route = Route()
         for best_route_idx in best_route:
-            # print(f'{points[best_route_idx].title}')
             route.add_point(points[best_route_idx])
 
         routes.append(route)
 
-        # print(f'best route: {best_route} - best distance: {best_distance}')
     json_output = json.dumps([r.to_dict() for r in routes], indent=2)
 
-    # print(json_output)
     return json_output
 
 # no_priority()
 
 def main():
-    # Lê o argumento JSON passado pelo Node
     input_json = sys.argv[1]
     data = json.loads(input_json)
 
     delivery_points = [
         DeliveryPoint(
+            id=item['id'],
             title=item['address'],
             lat=item['lat'],
             lng=item['lng'],
@@ -244,6 +229,7 @@ def main():
     dpsPriority = []
     for item in data["deliveryPoints"]:
         dp = DeliveryPoint(
+            id=item['id'],
             title=item['address'],
             lat=item['lat'],
             lng=item['lng'],
@@ -255,31 +241,20 @@ def main():
         else:
             dps.append(dp)
 
-    if len(dpsPriority) % 2 != 0:
+    # se não houver duplas possiveis, desconsiderar priorities
+    if len(dpsPriority) == 0 or len(dpsPriority) % 2 != 0:
         dps += dpsPriority
+        vehicles = data["vehicles"] if data["vehicles"] else 2
 
-    vehicles = data["vehicles"] if data["vehicles"] else 2
-
-    # print(delivery_points)
-
-    # print('\nPYDATA')
-    # print(data)
-    processed = no_priority(
-        delivery_points,
-        min_clusters=vehicles,
-    )
+        processed = no_priority(
+            delivery_points,
+            min_clusters=vehicles["min"],
+            max_clusters=vehicles["max"],
+        )
+    else:
+        processed = calc_with_priorities(dpsPriority, dps)
 
     print(processed)
-    # Faz alguma lógica
-    # result = {
-    #     "data": data
-        # "received_name": data["name"],
-        # "sum": sum(data["numbers"]),
-        # "count": len(data["numbers"])
-    # }
-
-    # Retorna o resultado como JSON (stdout)
-    # print(json.dumps(result))
 
 if __name__ == "__main__":
     main()

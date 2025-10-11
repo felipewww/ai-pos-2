@@ -1,12 +1,15 @@
 <template>
     <div class="card">
         <div class="card-body">
+            <div v-if="deliveryPoint.hasRoute()" :style="{backgroundColor: deliveryPoint.routeProps.color}">
+                Rota {{ deliveryPoint.routeProps.id }}
+            </div>
             <div class="row">
                 <div class="col">
-                    {{idx}} - {{deliveryPoint.address.split('-')[0]}}
+                    <span @click="viewInMap">{{idx}}</span> - {{deliveryPoint.address.split('-')[0]}}
                 </div>
                 <div class="col">
-                    <div>Prioridade de entrega?</div>
+                    <div>Prioridade?</div>
                     <div class="btn-group" role="group" aria-label="Basic example">
                         <button @click="deliveryPoint.setPriority(true)" type="button" :class="cssPriority()">Sim</button>
                         <button @click="deliveryPoint.setPriority(false)" type="button" :class="cssNoPriority()">Não</button>
@@ -31,8 +34,17 @@ const props = defineProps({
     }
 })
 
+
+function viewInMap() {
+    props.deliveryPoint.showMarker()
+
+    setTimeout(() => {
+        props.deliveryPoint.removeMarker()
+    }, 3000)
+}
+
 function cssPriority() {
-    const css = ['btn']
+    const css = ['btn btn-sm']
 
     if (props.deliveryPoint.isPriority) {
         css.push('btn-success')
@@ -44,7 +56,7 @@ function cssPriority() {
 }
 
 function cssNoPriority() {
-    const css = ['btn']
+    const css = ['btn btn-sm']
 
     if (!props.deliveryPoint.isPriority) {
         css.push('btn-info')

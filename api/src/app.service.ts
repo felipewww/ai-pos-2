@@ -1,19 +1,15 @@
 import { Injectable } from '@nestjs/common';
-import { DeliveryPointInput } from "./domain/types/delivery-point.input";
+import { DeliveryPointInput } from "./domain/types/calculate/delivery-point.input";
 import { spawn } from "node:child_process";
 import { PyResponse } from "./domain/types/py-response";
 
 @Injectable()
 export class AppService {
-  async calcRoutes(deliveryPoints: DeliveryPointInput[]): Promise<PyResponse> {
-
-    let vehicles = 4;
-
-    if (vehicles <= deliveryPoints.length) {
-      vehicles = Math.floor(deliveryPoints.length / 2);
-    }
-
-    const req = {
+  async calcRoutes(
+    deliveryPoints: DeliveryPointInput[],
+    vehicles: { min: number, max: number }
+  ): Promise<PyResponse> {
+    const pyReq = {
       deliveryPoints,
       vehicles,
     };
@@ -22,7 +18,7 @@ export class AppService {
       const pyFolder = `${__dirname}/../../log-ai`
       const python = spawn(`${pyFolder}/venv/bin/python`, [
         `${pyFolder}/src/app.py`,
-        JSON.stringify(req)
+        JSON.stringify(pyReq)
       ]);
 
       let data = "";

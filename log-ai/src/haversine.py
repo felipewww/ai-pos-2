@@ -125,8 +125,8 @@ def assign_points_to_pairs_with_radius(
     """
 
     routes = []
-    # used = set()
-    used = []
+    used = set()
+    # used = []
 
     for (p1, p2) in pairs:
         # rota inicial = a dupla
@@ -144,8 +144,8 @@ def assign_points_to_pairs_with_radius(
         # adiciona os pontos dentro do raio
         for c in inside:
             route.append(c)
-            # used.add(candidates.index(c))
-            used.append(c)
+            used.add(candidates.index(c))
+            # used.append(c)
 
         route = [p1] + route + [p2]
 

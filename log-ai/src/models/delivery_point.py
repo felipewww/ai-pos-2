@@ -9,8 +9,10 @@ class DeliveryPoint:
             lng: float,
             is_priority=False,
             packages: List[Package] = [],
+            id: str = 'AAAZZZ',
     ):
         self.title = title
         self.lat = lat
         self.lng = lng
         self.is_priority = is_priority
+        self.id = id
