@@ -1,15 +1,11 @@
 import random
 from typing import List
-
 import numpy as np
 
-# todo
-# escolher o algoritimo correto conforme a quantidade de dados e o resultado de combinações,
-# se for apenas 7 pontos o numero de população é baixo (7−1)!/2=360
-# para poucos pontos ( < 10 ) não adianta usar AG, é melhor usar força bruta
-# para medio ( 20 - 40 pontos ) é melhor começar usar AG, pois o numero de combinações de populaçao aumenta muito
-
-# --- Função de fitness ---
+# Calcula o "fitness" (aptidão) de uma rota.
+# Nesse caso, é a distância total percorrida somando as distâncias entre
+# todos os pontos e retornando ao ponto inicial.
+# Quanto MENOR o valor retornado, MELHOR é a rota.
 def calculate_fitness(route, dist_matrix):
     total_dist = 0
     for i in range(len(route) - 1):
@@ -17,6 +13,10 @@ def calculate_fitness(route, dist_matrix):
     total_dist += dist_matrix[route[-1]][route[0]]  # volta ao início
     return total_dist
 
+# Gera a população inicial do algoritmo genético.
+# Cada indivíduo (rota) é uma permutação aleatória dos pontos.
+# Se lock_start=True ou lock_end=True, o primeiro e/ou último ponto são fixos
+# (útil para manter uma origem e destino fixos, como início/fim de uma entrega).
 def generate_population(
         size,
         num_points,
@@ -49,17 +49,36 @@ def generate_population(
 
     return population
 
+# Seleciona um indivíduo para reprodução usando "torneio".
+# Escolhe k indivíduos aleatórios e retorna o que tem melhor fitness (menor distância).
+# Essa técnica mantém diversidade, mas ainda favorece os melhores.
 def tournament_selection(population, fitnesses, k=7):
+    # garante que k não ultrapasse o tamanho da população
+    k = min(k, len(population))
+    if k <= 0:
+        raise ValueError("População vazia — impossível selecionar indivíduos.")
+
     selected = random.sample(list(zip(population, fitnesses)), k)
     selected.sort(key=lambda x: x[1])
     return selected[0][0]
 
+# Executa o cruzamento (crossover) entre dois pais para gerar um novo filho.
+# Usa o método "Order Crossover" (OX):
+# 1. Copia um trecho contínuo do primeiro pai.
+# 2. Completa o restante com a ordem dos pontos do segundo pai,
+#    sem repetir elementos.
+# Mantém start/end fixos se indicado.
 def order_crossover(parent1, parent2, lock_start=True, lock_end=True):
     size = len(parent1)
 
     # ajusta índices de corte para não pegar start/end
     start_idx = 1 if lock_start else 0
     end_idx = size - 2 if lock_end else size - 1
+
+    # garante que há ao menos 2 posições para amostragem
+    if end_idx - start_idx < 1:
+        # fallback: sem cruzamento, apenas copia o parent1
+        return parent1.copy()
 
     start, end = sorted(random.sample(range(start_idx, end_idx+1), 2))
 
@@ -85,22 +104,10 @@ def order_crossover(parent1, parent2, lock_start=True, lock_end=True):
 
     return child
 
-# --- Mutação (swap) ---
-# def mutate(route, mutation_rate):
-#     route = route[:]
-#     if random.random() < mutation_rate:
-#         i, j = random.sample(range(len(route)), 2)
-#         route[i], route[j] = route[j], route[i]
-#     return route
-
-# ---------- Mutação (2-opt style: inverte segmento) ----------
-# def mutate(route, mutation_rate=0.5):
-#     route = route[:]
-#     if random.random() < mutation_rate:
-#         i, j = sorted(random.sample(range(len(route)), 2))
-#         route[i:j] = reversed(route[i:j])
-#     return route
-
+# Executa mutação em uma rota com certa probabilidade (mutation_rate).
+# A mutação inverte a ordem de um trecho aleatório da rota (2-opt simples).
+# Mantém o primeiro e/ou último ponto fixo se lock_start/end forem True.
+# Serve para evitar que a população convirja prematuramente.
 def mutate(
         route,
         mutation_rate=0.1,
@@ -112,6 +119,12 @@ def mutate(
         start_idx = 1 if lock_start else 0
         end_idx = len(route) - 2 if lock_end else len(route) - 1
         # end_idx = len(route) - 1 if lock_end else len(route) - 2
+
+        # garante que há pelo menos 2 posições possíveis
+        if end_idx - start_idx < 1:
+            # não há espaço suficiente para mutação
+            return route2
+
         i, j = sorted(random.sample(range(start_idx, end_idx+1), 2))
         route2[i:j] = reversed(route2[i:j])
     return route2
@@ -125,7 +138,6 @@ def genetic_algorithm(
         lock_start=False,
         lock_end=False,
 ):
-    # print("Start point?", start_point)
     num_points = len(dist_matrix)
     population = generate_population(
         population_size,
@@ -134,11 +146,6 @@ def genetic_algorithm(
         lock_end,
     )
 
-    # print('all population')
-    # for inner_array in population:
-    #     print(inner_array)
-
-    # return
     best_route = None
     best_distance = float("inf")
 
@@ -161,8 +168,6 @@ def genetic_algorithm(
         # elite_size = max(1, population_size // 20)  # 5%
         # elite_indices = np.argsort(fitnesses)[:elite_size]
         # new_population = [population[i] for i in elite_indices]
-
-        # print('\n')
 
         while len(new_population) < population_size:
             parent1 = tournament_selection(population, fitnesses)

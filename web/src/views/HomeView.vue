@@ -108,6 +108,7 @@ const vehiclesForm = reactive({
 })
 
 const routes = ref<RouteCalc[]>([])
+let routeRenderers = ref<google.maps.DirectionsRenderer[]>([])
 
 const currentMarkerNumber = computed(() => {
     return (deliveryPoints.value.length + 1).toString()
@@ -141,10 +142,7 @@ function showActiveRoutes(route: RouteCalc) {
     nextTick(() => {
         routes.value.map(r => {
             if (r.showing) {
-                console.log(`should SHOW route ${r.id}`)
                 traceRouteCluster(r)
-            } else {
-                console.log(`should NOT show route ${r.id}`)
             }
         })
     })
@@ -164,9 +162,7 @@ async function mountMap() {
         center: {
             lat: -23.220512,
             lng: -45.890889,
-            // lat: -23.499191,
-            // lng: -46.625594,
-        }, // SP
+        }, // SJC
         zoom: 14,
         styles: [
             {
@@ -252,9 +248,6 @@ function addMarker() {
     currentMarker.value.setMap(null);
 }
 
-// Lista global para armazenar renderizadores ativos (para poder limpar depois)
-let routeRenderers = ref<google.maps.DirectionsRenderer[]>([])
-
 function clearRoutes() {
     // usedColors.clear();
     routeRenderers.value.forEach(r => r.setMap(null))
@@ -278,45 +271,7 @@ function clearAll() {
     clearPoints()
 }
 
-// const usedColors = new Set<string>()
-
-// function traceMultipleRoutes(allClusters: DP[][]) {
-//     // Remove rotas antigas
-//     clearRoutes()
-//
-//     // Paleta de cores (pode aumentar conforme número de clusters)
-//     // const colors = [
-//     //     "#FF0000",
-//     //     "#008000",
-//     //     "#0000FF",
-//     //     "#FFA500",
-//     //     "#800080",
-//     //     "#00CED1",
-//     //     "#d10088",
-//     //     "#ffe145",
-//     //     "#370000",
-//     //     "#000000",
-//     //     "#ffa86e",
-//     // ]
-//
-//     // const availableColors = colors.filter(c => !usedColors.has(c))
-//
-//     allClusters.forEach((dps, idx) => {
-//         // const randomIndex = Math.floor(Math.random() * availableColors.length)
-//         // const color = colors[randomIndex]
-//         // usedColors.add(color)
-//         traceRouteCluster(dps, color)
-//     })
-// }
-
 function traceRouteCluster(route: RouteCalc) {
-    // if (!dps || dps.length < 2) return
-    // if (route.showing) {
-    //     return;
-    // }
-
-    // route.showing = true;
-
     const directionsService = new google.maps.DirectionsService();
     const directionsRenderer = new google.maps.DirectionsRenderer({
         map: map.value,
@@ -368,8 +323,8 @@ function addCustomMarkers(dps: DeliveryPoint[], color: string) {
                 scale: 16,
                 fillColor: color,
                 fillOpacity: 1,
-                strokeColor: "#FFF",
-                strokeWeight: 2,
+                strokeColor: (p.isPriority) ? '#8dff66' : "#FFF",
+                strokeWeight: (p.isPriority) ? 4 : 2,
             },
             // title: p.title,
         })
@@ -425,11 +380,8 @@ function calcRoutes() {
                 usedColors.add(color)
 
                 const deliveryPointsMapped: DeliveryPoint[] = []
-                console.log(deliveryPointsHashmap.value)
                 route.deliveryPoints.map(p => {
-                    console.log(`\nfinding DP by id ${p.id}`)
                     const idx = deliveryPointsHashmap.value[p.id]
-                    console.log(`idx found: ${idx}`)
                     const dp = deliveryPoints.value[idx];
                     if (!dp) {
                         alert("No deliveryPoints found");
@@ -453,11 +405,6 @@ function calcRoutes() {
             deliveryPoints.value.map((p, i) => {
                 p.removeMarker()
             })
-
-            console.log('routes.value:::')
-            console.log(routes.value)
-
-            // traceMultipleRoutes(toRoutes);
         })
         .catch(error => {
             alert('Algo deu errado!')

@@ -2,7 +2,7 @@ import type {DeliveryPoint} from "@/types/delivery-point.ts";
 
 export class RouteCalc {
     public showing = false;
-    private points: DeliveryPoint[] = [];
+    public readonly points: DeliveryPoint[] = [];
 
     constructor(
         public readonly id: number,

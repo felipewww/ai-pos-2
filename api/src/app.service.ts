@@ -9,6 +9,14 @@ export class AppService {
     deliveryPoints: DeliveryPointInput[],
     vehicles: { min: number, max: number }
   ): Promise<PyResponse> {
+
+    if (!vehicles.min) {
+      vehicles.min = null;
+    }
+    if (!vehicles.max) {
+      vehicles.max = null;
+    }
+
     const pyReq = {
       deliveryPoints,
       vehicles,

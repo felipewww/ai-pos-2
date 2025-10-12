@@ -5,7 +5,7 @@ from typing import List
 from sklearn.preprocessing import StandardScaler
 from models.delivery_point import DeliveryPoint
 
-def auto_kmeans(
+def distribute_points_kmeans(
         points: List[DeliveryPoint],
         min_clusters: int = 2,
         max_clusters: int = 10
