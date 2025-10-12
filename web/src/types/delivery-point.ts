@@ -2,7 +2,7 @@ import {generateRandomString} from "@/utils/utils.ts";
 import type {RouteCalc} from "@/types/route-calc.ts";
 
 export class DeliveryPoint {
-    private _isPriority: boolean = false;
+    public _isPriority: boolean = false;
     public id: string;
 
     private route: RouteCalc;

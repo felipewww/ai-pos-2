@@ -4,93 +4,36 @@
             Calculando
         </div>
         <div class="row">
-            <div class="col">
-                <div v-if="!deliveryPoints.length">
-                    Selecione os pontos no mapa para criar um ponto de entrega
-                </div>
-                <div class="row">
-                    <div class="col-12" v-if="routes.length">
-                        <div>Selecione as rotas geradas a serem exibidas</div>
-                        <div v-for="route of routes" class="btn-group">
-                            <div
-                                :style="{backgroundColor: (route.showing) ? route.color : 'black', borderColor: route.color, border: `3px solid ${route.color}`}"
-                                class="btn btn-dark"
-                                @click="showActiveRoutes(route)"
-                            >
-                                Rota {{route.id}} - {{route.points.length}} pontos
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- exibir pontos sem rota -->
-                    <div v-if="!routes.length" class="col-6 g-2" v-for="(dp, idx) of deliveryPoints">
-                        <CDeliveryPoint
-                            :idx="idx+1"
-                            :delivery-point="dp"/>
-                    </div>
-
-                    <!-- exibir cards ordenados por rota criada -->
-                    <div v-else class="col-6 g-2" v-for="(route, idx) of routes">
-                        <div v-if="route.showing" v-for="(dp, idx) of route.points">
-                            <CDeliveryPoint
-                                :idx="idx+1"
-                                :delivery-point="dp"/>
-                        </div>
-                    </div>
-                </div>
-                <div class="card" v-if="gptConversation">
+            <div class="col-12">
+                <div class="card" v-if="deliveryPoints.length >= 3">
                     <div class="card-body">
-                        {{gptConversation}}
-                    </div>
-                </div>
-            </div>
-            <div class="col g-2">
-                <div class="card">
-                    <div class="card-body">
-                        <div class="map-container">
-                            <br>
-                            <div ref="mapEl" class="map"></div>
-                            <br>
-                            <div class="row" v-if="deliveryPoints.length >= 3">
-                                <div></div>
-                                <div class="col-12 text-center" v-if="isPriorityDelivery">
-                                    <div class="alert alert-info text-center" role="alert">
-                                        O total de ( {{prioritiesCount}} ) entregas prioritárias criará ( {{prioritiesCount / 2}} ) rota(s)
-                                    </div>
+                        <div class="col-12">
+                            <div class="row">
+                                <div class="col">
+                                    <label class="form-label">Mín. de Veículos (até {{vehiclesForm.max}})</label>
+                                    <input
+                                        v-model="vehiclesForm.min"
+                                        :max="(vehiclesForm.max) ? vehiclesForm.max : 1"
+                                        min="1"
+                                        class="form-control"
+                                        type="number"
+                                        placeholder="Mín. de veículos"
+                                        autocomplete="off"/>
                                 </div>
-                                <div class="col-12" v-if="!isPriorityDelivery">
-                                    <div class="row">
-                                        <div class="col-12" v-if="prioritiesCount > 0">
-                                            <div class="alert alert-warning text-center" role="alert">
-                                                As prioridades não formam duplas e serão distribuidas entre rotas distintas
-                                            </div>
-                                        </div>
-                                        <div class="col-6">
-                                            <label class="form-label">Mín. de Veículos (até {{vehiclesForm.max}})</label>
-                                            <input
-                                                v-model="vehiclesForm.min"
-                                                :max="(vehiclesForm.max) ? vehiclesForm.max : 1"
-                                                min="1"
-                                                class="form-control"
-                                                type="number"
-                                                placeholder="Mín. de veículos"
-                                                autocomplete="off"/>
-                                        </div>
-                                        <div class="col-6">
-                                            <label class="form-label">Máx. de Veículos (até {{Math.floor(deliveryPoints.length / 2)}})</label>
-                                            <input
-                                                v-model="vehiclesForm.max"
-                                                :max="Math.floor(deliveryPoints.length / 2)"
-                                                min="1"
-                                                class="form-control"
-                                                type="number"
-                                                placeholder="Máx. de veículos"
-                                                autocomplete="off"
-                                            />
-                                        </div>
-                                    </div>
+                                <div class="col">
+                                    <label class="form-label">Máx. de Veículos (até {{Math.floor(deliveryPoints.length / 2)}})</label>
+                                    <input
+                                        v-model="vehiclesForm.max"
+                                        :max="Math.floor(deliveryPoints.length / 2)"
+                                        min="1"
+                                        class="form-control"
+                                        type="number"
+                                        placeholder="Máx. de veículos"
+                                        autocomplete="off"
+                                    />
                                 </div>
-                                <div class="col-12 mt-2 d-flex justify-content-center">
+                                <div class="col d-flex justify-content-center align-items-center">
+<!--                                    <label class="form-label">ações</label>-->
                                     <div class="btn-group">
                                         <div class="btn btn-success" @click="calcRoutes">Calcular rotas</div>
                                         <div class="btn btn-danger" @click="hideAll">Limpar mapa</div>
@@ -98,13 +41,83 @@
                                     </div>
                                 </div>
                             </div>
-                            <div v-else>
-                                Adicione ao menos 3 pontos de entrega
-                            </div>
+                        </div>
+                    </div>
+                </div>
+<!--                <div v-else>Selecione ao menos 3 pontos de entrega</div>-->
+            </div>
 
-                            <div v-if="clickedLocation" class="clickedLocation">
+            <div class="col-12 mt-3" v-if="routes.length">
+                <div class="card">
+                    <div class="card-body">
+                        <div v-show="gptConversation" class="alert alert-primary d-flex align-items-center" role="alert">
+                            <div>
+                                {{gptConversation}}
+                            </div>
+                        </div>
+
+                        <div>Selecione as rotas geradas a serem exibidas</div>
+                        <div v-for="route of routes" class="btn-group">
+                            <div
+                                :style="{backgroundColor: (route.showing) ? route.color : 'white', borderColor: route.color, border: `3px solid ${route.color}`}"
+                                class="btn"
+                                style="margin-right: 5px"
+                                @click="showActiveRoutes(route)"
+                            >
+                                Rota {{route.id}} - {{route.points.length}} pontos
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-8 mt-3">
+                <div class="card">
+                    <div class="card-body">
+                        <div class="map-container">
+                            <br>
+                            <div ref="mapEl" class="map"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col mt-3">
+                <div class="card">
+                    <div class="card-body">
+                        <div class="alert alert-info" v-if="!deliveryPoints.length">
+                            Selecione os pontos no mapa para criar um ponto de entrega
+                        </div>
+                        <div class="alert alert-warning" v-if="deliveryPoints.length > 0 && deliveryPoints.length < 3">
+                            Selecione ao menos 3 pontos de entrega antes de calcular rotas
+                        </div>
+
+                        <div class="alert alert-info text-center" role="alert" v-if="isPriorityDelivery">
+                            Foram detectadas {{prioritiesCount}} entregas prioritárias, que formarão automaticamente {{prioritiesCount / 2}} rota(s), ignorando o limite de veículos configurado.
+                        </div>
+                        <div class="alert alert-warning text-center" role="alert" v-if="prioritiesCount > 0 && !isPriorityDelivery">
+                            Nenhuma dupla de prioridades foi formada. As entregas prioritárias serão espalhadas entre diferentes rotas para manter o equilíbrio das entregas.
+                        </div>
+
+                        <div v-if="clickedLocation" class="card mt-3">
+                            <div class="card-body">
                                 <p><strong>Endereço:</strong> {{ clickedLocation.address }}</p>
                                 <div class="btn btn-success" @click="addMarker">Adicionar Ponto de entrega</div>
+                            </div>
+                        </div>
+
+                        <!-- exibir pontos sem rota -->
+                        <div v-if="!routes.length" class="col-12 g-2" v-for="(dp, idx) of deliveryPoints">
+                            <CDeliveryPoint
+                                :idx="idx+1"
+                                :delivery-point="dp"/>
+                        </div>
+
+                        <!-- exibir cards ordenados por rota criada -->
+                        <div v-else class="col-12 g-2" v-for="(route, idx) of routes">
+                            <div v-if="route.showing" v-for="(dp, idx) of route.points">
+                                <CDeliveryPoint
+                                    :idx="idx+1"
+                                    :delivery-point="dp"/>
                             </div>
                         </div>
                     </div>
@@ -160,6 +173,10 @@ const prioritiesCount = computed(() => {
 })
 
 const isPriorityDelivery = computed(() => {
+    if (prioritiesCount.value === 0) {
+        return false;
+    }
+
     return prioritiesCount.value % 2 === 0;
 })
 
@@ -489,12 +506,13 @@ div#loading {
     flex-direction: column;
     align-items: center;
     width: 100%;
-    height: 700px;
+    height: 100%;
 }
 
 .map {
     width: 100%;
-    height: 500px;
+    /*height: 500px;*/
+    height: calc(100vh - 170px);
 }
 
 .clickedLocation {
