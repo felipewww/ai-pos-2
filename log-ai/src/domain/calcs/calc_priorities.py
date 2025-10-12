@@ -30,7 +30,7 @@ def calc_with_priorities(
         best_route, best_distance = genetic_algorithm(
             matrix,
             population_size=len(pair_ag) * len(pair_ag), # poderiamos usar força bruta, pois aqui temos poucas rotas entre priority 1 e 2
-            generations=100,
+            generations=300,
             lock_start=False,
             lock_end=False,
         )

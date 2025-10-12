@@ -36,8 +36,11 @@ export class DeliveryPoint {
     }
 
     assignRoute(route: RouteCalc) {
-        console.log('\nassignRoute...........', route, this);
         this.route = route;
+    }
+
+    unassignRoute() {
+        this.route = null;
     }
 
     hasRoute(): boolean {

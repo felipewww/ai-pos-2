@@ -4,7 +4,7 @@ from typing import List
 from domain.distribute_points_kmeans import distribute_points_kmeans
 from domain.genetic_algorithm import genetic_algorithm
 from domain.matrix.gmaps import gmaps_matrix
-from domain.matrix.haversine import haversine_distance_matrix
+from domain.matrix.haversine import haversine_distance_matrix, haversine
 from infra.env import MATRIX_LIB
 from models.delivery_point import DeliveryPoint
 from models.route import Route
@@ -54,9 +54,10 @@ def no_priority(
         if len(points) < 3:
             # não dá pra fazer crossover — usa caminho direto
             best_route = list(range(len(points)))
-            # best_distance = calc_total_distance(points)
+            best_distance = calc_total_distance(points)
+            fit_history = []
         else:
-            best_route, best_distance = genetic_algorithm(
+            best_route, best_distance, fit_history = genetic_algorithm(
                 matrix,
                 population_size,
                 generations=100,
@@ -68,11 +69,22 @@ def no_priority(
         for best_route_idx in best_route:
             route.add_point(points[best_route_idx])
 
+        route.add_info({
+            # "best_route_idx": best_route_idx,
+            "population_size": population_size,
+            "fit_history": fit_history,
+        })
+
         routes.append(route)
 
-    json_output = json.dumps([r.to_dict() for r in routes], indent=2)
+    output = {
+        "routes": [r.to_dict() for r in routes],
+        # "best_route": best_route,
+        # "best_distance": best_distance,
+        # "fit_history": fit_history,
+    }
 
-    return json_output
+    return json.dumps(output)
 
 def calc_total_distance(points: List):
     """

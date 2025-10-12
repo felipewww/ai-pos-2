@@ -132,7 +132,7 @@ def mutate(
 # ---------- Algoritmo Genético ----------
 def genetic_algorithm(
         dist_matrix: List[float],
-        population_size=700, # população em 70 o reusltado é muito melhor, porque? o mesmo para generations e mutation_rate
+        population_size=700, # população em 700 o reusltado é muito melhor, porque? o mesmo para generations e mutation_rate
         generations=200,
         mutation_rate=0.9,
         lock_start=False,
@@ -149,6 +149,7 @@ def genetic_algorithm(
     best_route = None
     best_distance = float("inf")
 
+    fit_history = []
     for gen in range(generations):
         fitnesses = [calculate_fitness(ind, dist_matrix) for ind in population]
 
@@ -156,6 +157,15 @@ def genetic_algorithm(
         gen_best_idx = np.argmin(fitnesses)
         gen_best_route = population[gen_best_idx]
         gen_best_distance = fitnesses[gen_best_idx]
+
+        if gen % 10 == 0:
+            fit_history.append({
+                "generation": gen,
+                "best": float(np.min(fitnesses)),
+                "mean": float(np.mean(fitnesses)),
+                "worst": float(np.max(fitnesses)),
+                "std": float(np.std(fitnesses)),
+            })
 
         if gen_best_distance < best_distance:
             best_distance = gen_best_distance
@@ -183,8 +193,15 @@ def genetic_algorithm(
 
         population = new_population
 
+    fit_history.append({
+        "generation": gen,
+        "best": float(np.min(fitnesses)),
+        "mean": float(np.mean(fitnesses)),
+        "worst": float(np.max(fitnesses)),
+        "std": float(np.std(fitnesses)),
+    })
         # if gen % 5 == 0:
         #     print(best_route)
         #     print(f"Geração {gen}: melhor distância = {best_distance}")
 
-    return best_route, best_distance
+    return best_route, best_distance, fit_history

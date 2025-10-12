@@ -1,15 +1,46 @@
 <template>
     <div>
+        <div v-show="isLoading" id="loading">
+            Calculando
+        </div>
         <div class="row">
             <div class="col">
                 <div v-if="!deliveryPoints.length">
                     Selecione os pontos no mapa para criar um ponto de entrega
                 </div>
                 <div class="row">
-                    <div class="col-6 g-2" v-for="(dp, idx) of deliveryPoints">
+                    <div class="col-12" v-if="routes.length">
+                        <div>Selecione as rotas geradas a serem exibidas</div>
+                        <div v-for="route of routes" class="btn-group">
+                            <div
+                                :style="{backgroundColor: (route.showing) ? route.color : 'black', borderColor: route.color, border: `3px solid ${route.color}`}"
+                                class="btn btn-dark"
+                                @click="showActiveRoutes(route)"
+                            >
+                                Rota {{route.id}} - {{route.points.length}} pontos
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- exibir pontos sem rota -->
+                    <div v-if="!routes.length" class="col-6 g-2" v-for="(dp, idx) of deliveryPoints">
                         <CDeliveryPoint
                             :idx="idx+1"
                             :delivery-point="dp"/>
+                    </div>
+
+                    <!-- exibir cards ordenados por rota criada -->
+                    <div v-else class="col-6 g-2" v-for="(route, idx) of routes">
+                        <div v-if="route.showing" v-for="(dp, idx) of route.points">
+                            <CDeliveryPoint
+                                :idx="idx+1"
+                                :delivery-point="dp"/>
+                        </div>
+                    </div>
+                </div>
+                <div class="card" v-if="gptConversation">
+                    <div class="card-body">
+                        {{gptConversation}}
                     </div>
                 </div>
             </div>
@@ -17,23 +48,23 @@
                 <div class="card">
                     <div class="card-body">
                         <div class="map-container">
-                            <div v-if="routes.length">
-                                <div v-for="route of routes">
-                                    <div
-                                        class="btn"
-                                        :style="{backgroundColor: (route.showing) ? route.color : 'gray'}"
-                                        @click="showActiveRoutes(route)"
-                                    >
-                                        Rota {{route.id}}
-                                    </div>
-                                </div>
-                            </div>
                             <br>
                             <div ref="mapEl" class="map"></div>
                             <br>
                             <div class="row" v-if="deliveryPoints.length >= 3">
-                                <div class="col-12">
+                                <div></div>
+                                <div class="col-12 text-center" v-if="isPriorityDelivery">
+                                    <div class="alert alert-info text-center" role="alert">
+                                        O total de ( {{prioritiesCount}} ) entregas prioritárias criará ( {{prioritiesCount / 2}} ) rota(s)
+                                    </div>
+                                </div>
+                                <div class="col-12" v-if="!isPriorityDelivery">
                                     <div class="row">
+                                        <div class="col-12" v-if="prioritiesCount > 0">
+                                            <div class="alert alert-warning text-center" role="alert">
+                                                As prioridades não formam duplas e serão distribuidas entre rotas distintas
+                                            </div>
+                                        </div>
                                         <div class="col-6">
                                             <label class="form-label">Mín. de Veículos (até {{vehiclesForm.max}})</label>
                                             <input
@@ -62,7 +93,8 @@
                                 <div class="col-12 mt-2 d-flex justify-content-center">
                                     <div class="btn-group">
                                         <div class="btn btn-success" @click="calcRoutes">Calcular rotas</div>
-                                        <div class="btn btn-danger" @click="clearAll">Limpar mapa</div>
+                                        <div class="btn btn-danger" @click="hideAll">Limpar mapa</div>
+                                        <div class="btn btn-danger" @click="clearRoutes">Deletar Rotas</div>
                                     </div>
                                 </div>
                             </div>
@@ -92,9 +124,11 @@ import type {DeliveryPointInput} from "@/types/dtos/calculate/delivery-point.inp
 import type {PyResponse} from "@/types/dtos/py-response.ts";
 import type {CalculateInput} from "@/types/dtos/calculate/calculate.input.ts";
 import {RouteCalc} from "@/types/route-calc.ts";
+import {randomColorQuadrant2} from "@/utils/utils.ts";
 
 const apiService = new ApiService();
 
+const isLoading = ref(false);
 const mapEl = ref<HTMLDivElement>(null);
 const clickedLocation = ref<{lat:number; lng:number; address:string}|null>(null);
 const API_KEY = ref('')
@@ -114,6 +148,21 @@ const currentMarkerNumber = computed(() => {
     return (deliveryPoints.value.length + 1).toString()
 })
 
+const prioritiesCount = computed(() => {
+    let prioritiesCount = 0;
+    deliveryPoints.value.map((item, idx) => {
+        if (item.isPriority) {
+            prioritiesCount++;
+        }
+    })
+
+    return prioritiesCount;
+})
+
+const isPriorityDelivery = computed(() => {
+    return prioritiesCount.value % 2 === 0;
+})
+
 const deliveryPointsHashmap = computed(() => {
     const map: { [key: string]: number } = {}
 
@@ -123,6 +172,8 @@ const deliveryPointsHashmap = computed(() => {
 
     return map;
 })
+
+const gptConversation = ref('');
 
 onMounted(async () => {
     apiService.getGmapsKey()
@@ -135,7 +186,7 @@ onMounted(async () => {
 });
 
 function showActiveRoutes(route: RouteCalc) {
-    clearAll();
+    hideAll();
 
     route.showing = (!route.showing);
 
@@ -156,7 +207,6 @@ async function mountMap() {
     const { Map }     = await importLibrary("maps");
     const { Marker }  = await importLibrary("marker");
     const { Geocoder }= await importLibrary("geocoding");
-    const { AdvancedMarkerElement }= await importLibrary("marker");
 
     map.value = new Map(mapEl.value, {
         center: {
@@ -248,8 +298,11 @@ function addMarker() {
     currentMarker.value.setMap(null);
 }
 
-function clearRoutes() {
-    // usedColors.clear();
+function hideRoutes() {
+    // routes.value.map(r => {
+    //     r.showing = false;
+    // })
+
     routeRenderers.value.forEach(r => r.setMap(null))
     routeRenderers.value = []
     routeMarkers.value.map(m => {
@@ -260,15 +313,30 @@ function clearRoutes() {
     routeMarkers.value = []
 }
 
-function clearPoints() {
+function hidePoints() {
     deliveryPoints.value.map(dp => {
         dp.removeMarker()
     })
 }
 
-function clearAll() {
-    clearRoutes()
-    clearPoints()
+function hideAll() {
+    hideRoutes()
+    hidePoints()
+}
+
+function clearRoutes() {
+    routes.value.map(r => {
+        r.showing = false;
+    })
+
+    deliveryPoints.value.map(dp => {
+        dp.unassignRoute()
+        dp.showMarker()
+    })
+
+    routes.value = []
+
+    gptConversation.value = ''
 }
 
 function traceRouteCluster(route: RouteCalc) {
@@ -339,6 +407,9 @@ function calcRoutes() {
         return;
     }
 
+    // hideRoutes()
+    hideAll();
+
     const deliveryPointsInput: DeliveryPointInput[] = deliveryPoints.value
         .map(d => ({
             id: d.id,
@@ -353,33 +424,17 @@ function calcRoutes() {
         vehicles: vehiclesForm
     }
 
+    isLoading.value = true;
+
     apiService.calculateRoutes(body)
         .then(async (res) => {
             const response = await res.json() as { data: PyResponse };
 
-            const colors = [
-                "#FF0000",
-                "#008000",
-                "#0000FF",
-                "#FFA500",
-                "#800080",
-                "#00CED1",
-                "#d10088",
-                "#ffe145",
-                "#370000",
-                "#000000",
-                "#ffa86e",
-            ]
-
-            const usedColors = new Set<string>()
-
-            routes.value = response.data.map((route, idx) => {
-                const availableColors = colors.filter(c => !usedColors.has(c))
-                const randomIndex = Math.floor(Math.random() * availableColors.length)
-                const color = colors[randomIndex]
-                usedColors.add(color)
-
+            gptConversation.value = response.data.conversation;
+            routes.value = response.data.routes.map((route, idx) => {
+                const color = randomColorQuadrant2()
                 const deliveryPointsMapped: DeliveryPoint[] = []
+
                 route.deliveryPoints.map(p => {
                     const idx = deliveryPointsHashmap.value[p.id]
                     const dp = deliveryPoints.value[idx];
@@ -409,10 +464,26 @@ function calcRoutes() {
         .catch(error => {
             alert('Algo deu errado!')
         })
+        .finally(() => {
+            isLoading.value = false
+        })
 }
 </script>
 
 <style>
+div#loading {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgb(0 0 0 / 90%);
+    z-index: 999;
+}
+
 .map-container {
     display: flex;
     flex-direction: column;

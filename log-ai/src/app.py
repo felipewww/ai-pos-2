@@ -24,6 +24,7 @@ def main():
 
     dps = []
     dpsPriority = []
+
     for item in data["deliveryPoints"]:
         dp = DeliveryPoint(
             id=item['id'],
