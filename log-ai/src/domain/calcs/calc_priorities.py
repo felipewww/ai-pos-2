@@ -27,7 +27,7 @@ def calc_with_priorities(
             matrix = haversine_distance_matrix(pair_ag)
 
         # aqui não precisamos travar o start e endpoint, eles serão os priorities e teremos poucas entregas entre eles
-        best_route, best_distance = genetic_algorithm(
+        best_route, best_distance, fit_history = genetic_algorithm(
             matrix,
             population_size=len(pair_ag) * len(pair_ag), # poderiamos usar força bruta, pois aqui temos poucas rotas entre priority 1 e 2
             generations=300,
@@ -53,9 +53,20 @@ def calc_with_priorities(
 
         routes.append(route)
 
-    json_output = json.dumps([r.to_dict() for r in routes], indent=2)
+    route.add_info({
+        # "best_route_idx": best_route_idx,
+        "population_size": None,
+        "fit_history": fit_history,
+    })
 
-    return json_output
+    output = {
+        "routes": [r.to_dict() for r in routes],
+        # "best_route": best_route,
+        # "best_distance": best_distance,
+        # "fit_history": fit_history,
+    }
+
+    return json.dumps(output)
 
 def distribute_remaining_with_ga(
         pairs_aggregated: List[List[DeliveryPoint]],
@@ -92,7 +103,7 @@ def distribute_remaining_with_ga(
         else:
             matrix = haversine_distance_matrix(points_to_optimize)
 
-        best_route, _ = genetic_algorithm(
+        best_route, best_distance, fit_history = genetic_algorithm(
             matrix,
             population_size=len(points_to_optimize) * len(points_to_optimize),
             generations=generations,

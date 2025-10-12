@@ -59,38 +59,5 @@ export class AppService {
       routes: result.routes,
       conversation: gptAnswer.output_parsed.conversation
     };
-
-    // return new Promise(async (resolve, reject) => {
-    //   const pyFolder = `${__dirname}/../../log-ai`
-    //   const python = spawn(`${pyFolder}/venv/bin/python`, [
-    //     `${pyFolder}/src/app.py`,
-    //     JSON.stringify(pyReq)
-    //   ]);
-    //
-    //   let data = "";
-    //
-    //   python.stdout.on("data", (chunk) => {
-    //     data += chunk.toString();
-    //   });
-    //
-    //   python.stderr.on("data", (err) => {
-    //     console.error("Python error:", err.toString());
-    //   });
-    //
-    //   // let result;
-    //
-    //   python.on("close", () => {
-    //     try {
-    //       const result = JSON.parse(data) as PyResponse;
-    //       console.log("Resposta do Python:", result);
-    //       resolve(result);
-    //     } catch (e) {
-    //       console.error("Erro ao parsear resposta JSON:", data);
-    //       reject();
-    //     }
-    //   });
-    //
-    //   // return result;
-    // })
   }
 }
