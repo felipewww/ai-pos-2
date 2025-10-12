@@ -86,7 +86,7 @@ def pair_points(points) -> List[Tuple[DeliveryPoint, DeliveryPoint]]:
 def assign_points_to_pairs_with_radius(
         pairs: List[Tuple[DeliveryPoint, DeliveryPoint]],
         candidates: List[DeliveryPoint],
-        radius_km=0.5
+        radius_km=0.3
 ) -> Tuple[List[List[DeliveryPoint]], List[DeliveryPoint]]:
     """
     pairs: lista de tuplas (p1, p2)
